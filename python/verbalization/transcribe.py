@@ -1,25 +1,31 @@
+import argparse
 import json
 import logging
 import os
 
 import pandas as pd
-from tqdm import trange
-from transformers import pipeline, AutoModelForSpeechSeq2Seq, AutoProcessor
 import torch
-import argparse
+from tqdm import trange
+from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 
 logging.basicConfig(filename=f"yt_asr_{os.getenv('DEVICE')}.log", filemode="w")
 
 chunk_size = 200
 batch_size = 200
 
-device=f"cuda:{os.getenv('DEVICE')}"
+device = f"cuda:{os.getenv('DEVICE')}"
 torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
 
 model_id = "openai/whisper-large-v3"
 
 processor = AutoProcessor.from_pretrained(model_id)
-model = AutoModelForSpeechSeq2Seq.from_pretrained(model_id, torch_dtype=torch_dtype, low_cpu_mem_usage=True, use_safetensors=True, use_flash_attention_2=True)
+model = AutoModelForSpeechSeq2Seq.from_pretrained(
+    model_id,
+    torch_dtype=torch_dtype,
+    low_cpu_mem_usage=True,
+    use_safetensors=True,
+    use_flash_attention_2=True,
+)
 
 ASR = pipeline(
     "automatic-speech-recognition",
@@ -44,14 +50,18 @@ if __name__ == "__main__":
     else:
         transcribed = pd.DataFrame(columns=["text", "chunks", "audio"])
     audio_db = open(out_path, "a")
-    
-    cb = pd.read_json('yt_ads_sharingan_nocap_f.jsonl', lines=True).sort_values('length')
-    cb = cb[cb['length']<120]
-    audios = cb['audio'].apply(lambda x: '/'.join(x.split('/')[-2:])).tolist()
+
+    cb = pd.read_json("yt_ads_sharingan_nocap_f.jsonl", lines=True).sort_values(
+        "length"
+    )
+    cb = cb[cb["length"] < 120]
+    audios = cb["audio"].apply(lambda x: "/".join(x.split("/")[-2:])).tolist()
 
     failed = []
 
-    for start in trange(int(os.getenv('DEVICE')) * chunk_size, len(audios), chunk_size * num_gpus):
+    for start in trange(
+        int(os.getenv("DEVICE")) * chunk_size, len(audios), chunk_size * num_gpus
+    ):
         # print(f"Start: {start} End: {start+chunk_size}")
         # chunk = audios[start : start + chunk_size]
         # asrs = ASR(chunk, batch_size=batch_size, return_timestamps=True)
@@ -67,5 +77,5 @@ if __name__ == "__main__":
         except:
             logging.error(json.dumps({"STATUS": "FAILED", "paths": chunk}))
             failed.extend(chunk)
-    with open('failed.jsonl', 'a') as f:
-        f.write(json.dumps(chunk) + '\n')
+    with open("failed.jsonl", "a") as f:
+        f.write(json.dumps(chunk) + "\n")

@@ -1,17 +1,20 @@
 # !pip install lxml
 
-import xml.etree.ElementTree as ElementTree
-from html import unescape
 import math
 import time
+import xml.etree.ElementTree as ElementTree
+from html import unescape
+
 import pandas as pd
+
 
 def read_from_jsonl(path):
     """Read a jsonl file into a pandas dataframe."""
     df = pd.read_json(path, lines=True)
-    df = df[df['Video'].notna()]
-    df = df[df['caption'].notna()]
+    df = df[df["Video"].notna()]
+    df = df[df["caption"].notna()]
     return df
+
 
 def float_to_srt_time_format(d: float) -> str:
     """Convert decimal durations into proper srt format.
@@ -28,7 +31,6 @@ def float_to_srt_time_format(d: float) -> str:
     return time_fmt + ms
 
 
-
 def xml_caption_to_srt(xml_captions: str, text_only=True) -> str:
     """Convert xml caption tracks to "SubRip Subtitle (srt)".
 
@@ -37,11 +39,13 @@ def xml_caption_to_srt(xml_captions: str, text_only=True) -> str:
     """
     segments = []
     root = ElementTree.fromstring(xml_captions)
-    for i, child in enumerate(list(root.findall('body/p'))):
-        text = ''.join(child.itertext()).strip()
+    for i, child in enumerate(list(root.findall("body/p"))):
+        text = "".join(child.itertext()).strip()
         if not text:
             continue
-        caption = unescape(text.replace("\n", " ").replace("  ", " "),)
+        caption = unescape(
+            text.replace("\n", " ").replace("  ", " "),
+        )
         try:
             duration = float(child.attrib["d"])
         except KeyError:
