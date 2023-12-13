@@ -2,7 +2,6 @@ import boto3
 import zstandard as zstd
 import io
 import json
-import pandas as pd
 import logging
 import tqdm
 
@@ -21,7 +20,7 @@ def get_all_keys(bucket, prefix):
                 if obj['Key'].endswith('.jsonl.zst'):
                     keys.append(obj['Key'])
     if len(keys) == 0:
-        logging.info(f"No files found in {bucket}/{prefix}")
+        logging.log(f"No files found in {bucket}/{prefix}")
     return keys
 
 def filter_and_dump_jsonl(input_bucket, key, substring):
@@ -53,15 +52,6 @@ def filter_all_jsonl(input_bucket, folder_path, output_bucket, substring, suffix
         s3.put_object(Bucket=output_bucket, Key=new_key, Body=''.join(filtered_rows))
         logging.info(f"Filtered data containing '{substring}' saved to s3://{output_bucket}/{new_key}")
         
-        
-def read_jsonl_from_s3(bucket, folder_path):
-    keys = [key for key in get_all_keys(bucket, folder_path) if key.endswith('.jsonl')]
-    dfs = []
-    for key in tqdm.tqdm(keys):
-        obj_data = s3.get_object(Bucket=bucket, Key=key)['Body']
-        df = pd.read_json(obj_data, lines=True)
-        dfs.append(df)
-    return pd.concat(dfs)
 # if __name__ == '__main__':
 #     input_bucket = output_bucket = 'crawldatafromgcp'
 #     folder_path = "somesh/reddit_hf/submissions"

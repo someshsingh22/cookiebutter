@@ -4,22 +4,39 @@ import os
 
 import pandas as pd
 from tqdm import trange
-from transformers import pipeline
+from transformers import pipeline, AutoModelForSpeechSeq2Seq, AutoProcessor
+import torch
+import argparse
 
-logging.basicConfig(filename="asr.log", filemode="w")
+logging.basicConfig(filename=f"yt_asr_{os.getenv('DEVICE')}.log", filemode="w")
 
-chunk_size = 16
-batch_size = 64
+chunk_size = 200
+batch_size = 200
+
+device=f"cuda:{os.getenv('DEVICE')}"
+torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+
+model_id = "openai/whisper-large-v3"
+
+processor = AutoProcessor.from_pretrained(model_id)
+model = AutoModelForSpeechSeq2Seq.from_pretrained(model_id, torch_dtype=torch_dtype, low_cpu_mem_usage=True, use_safetensors=True, use_flash_attention_2=True)
 
 ASR = pipeline(
     "automatic-speech-recognition",
-    model="openai/whisper-large-v3",
+    model=model,
+    return_timestamps=True,
+    torch_dtype=torch_dtype,
+    device=device,
+    tokenizer=processor.tokenizer,
+    feature_extractor=processor.feature_extractor,
+    max_new_tokens=128,
     chunk_length_s=30,
-    device=f"cuda:{os.getenv('DEVICE')}",
+    batch_size=batch_size,
 )
 
-out_path = f"asr_{os.getenv('DEVICE')}.jsonl"
-audio_db_path = "asr.jsonl"
+num_gpus = 8
+out_path = f"yt_asr_{os.getenv('DEVICE')}.jsonl"
+audio_db_path = f"yt_asr_{os.getenv('DEVICE')}.jsonl"
 
 if __name__ == "__main__":
     if os.path.exists(audio_db_path):
@@ -27,14 +44,20 @@ if __name__ == "__main__":
     else:
         transcribed = pd.DataFrame(columns=["text", "chunks", "audio"])
     audio_db = open(out_path, "a")
-    channel_db = json.load(open("data/agadmator/agadmator_channel_db.json"))
-    audios = [
-        a["audio"]
-        for a in sorted(list(channel_db.values()), key=lambda x: x["length"])
-        if not (a["audio"] in set(transcribed["audio"]))
-    ]
+    
+    cb = pd.read_json('yt_ads_sharingan_nocap_f.jsonl', lines=True).sort_values('length')
+    cb = cb[cb['length']<120]
+    audios = cb['audio'].apply(lambda x: '/'.join(x.split('/')[-2:])).tolist()
 
-    for start in trange(0, len(audios), chunk_size):
+    failed = []
+
+    for start in trange(int(os.getenv('DEVICE')) * chunk_size, len(audios), chunk_size * num_gpus):
+        # print(f"Start: {start} End: {start+chunk_size}")
+        # chunk = audios[start : start + chunk_size]
+        # asrs = ASR(chunk, batch_size=batch_size, return_timestamps=True)
+        # for audio, asr in zip(chunk, asrs):
+        #     asr["audio"] = audio
+        #     audio_db.write(json.dumps(asr) + "\n")
         try:
             chunk = audios[start : start + chunk_size]
             asrs = ASR(chunk, batch_size=batch_size, return_timestamps=True)
@@ -43,3 +66,6 @@ if __name__ == "__main__":
                 audio_db.write(json.dumps(asr) + "\n")
         except:
             logging.error(json.dumps({"STATUS": "FAILED", "paths": chunk}))
+            failed.extend(chunk)
+    with open('failed.jsonl', 'a') as f:
+        f.write(json.dumps(chunk) + '\n')
