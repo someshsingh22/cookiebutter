@@ -7,6 +7,15 @@ DEVICE=5 nohup python verbalize.py > out5.log &
 DEVICE=6 nohup python verbalize.py > out6.log &
 DEVICE=7 nohup python verbalize.py > out7.log &
 
+DEVICE=0 nohup python transcribe.py &
+DEVICE=1 nohup python transcribe.py &
+DEVICE=2 nohup python transcribe.py &
+DEVICE=3 nohup python transcribe.py &
+DEVICE=4 nohup python transcribe.py &
+DEVICE=5 nohup python transcribe.py &
+DEVICE=6 nohup python transcribe.py &
+DEVICE=7 nohup python transcribe.py &
+
 nohup python extractscenes.py --num_process 32 --process_idx 0 > out0.log &
 nohup python extractscenes.py --num_process 32 --process_idx 1 > out1.log &
 nohup python extractscenes.py --num_process 32 --process_idx 2 > out2.log &

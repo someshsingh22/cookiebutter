@@ -9,7 +9,7 @@ from transformers import AutoProcessor, LlavaConfig, LlavaForConditionalGenerati
 model_id = "llava-hf/llava-1.5-7b-hf"
 gpu_id = int(os.getenv("DEVICE", 0))
 num_gpus = 8
-batch_size = 32
+batch_size = 22
 
 device = f"cuda:{gpu_id}"
 
@@ -46,11 +46,12 @@ for i in trange(0, len(df), batch_size):
         ).to(device)
         output = model.generate(
             **inputs,
-            max_new_tokens=160,
+            max_new_tokens=90,
             use_cache=True,
             do_sample=True,
             temperature=0.4,
             top_p=0.8,
+            repetition_penalty=1.0,
         )
         batch["output"] = processor.batch_decode(output, skip_special_tokens=True)
     except:
