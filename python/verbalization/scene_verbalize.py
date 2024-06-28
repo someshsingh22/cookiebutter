@@ -1,20 +1,20 @@
-import glob
+from transformers import LlavaNextProcessor, LlavaNextForConditionalGeneration
 import os
 
 import pandas as pd
 from PIL import Image
 from tqdm import trange
-from transformers import AutoProcessor, LlavaConfig, LlavaForConditionalGeneration
+import torch
 
-model_id = "llava-hf/llava-1.5-7b-hf"
 gpu_id = int(os.getenv("DEVICE", 0))
-num_gpus = 8
-batch_size = 22
-
 device = f"cuda:{gpu_id}"
-
-model = LlavaForConditionalGeneration.from_pretrained(model_id).to(device)
-processor = AutoProcessor.from_pretrained(model_id, pad_token="<pad>")
+model = LlavaNextForConditionalGeneration.from_pretrained("llava-hf/llava-v1.6-vicuna-13b-hf", torch_dtype=torch.float16, low_cpu_mem_usage=True) .to(device)
+processor = LlavaNextProcessor.from_pretrained("llava-hf/llava-v1.6-vicuna-13b-hf")
+num_gpus = torch.cuda.device_count()
+batch_size = 22
+df = pd.read_json('stock_annots.jsonl', lines=True)
+df['path']='EmotionNet_dataset/images-256/' + df['path']
+df['prompt'] = "A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions. USER: <image>\nWhat is shown in this image? ASSISTANT:"
 
 # query = """For the given image, write a one line caption and maximum 20 descriptive keywords, no more than that.
 # For example:

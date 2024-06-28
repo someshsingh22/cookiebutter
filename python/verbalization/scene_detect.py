@@ -53,35 +53,26 @@ def parse_arguments():
 
 args = parse_arguments()
 
-s3 = boto3.client("s3")
-bucket = "crawldatafromgcp"
-prefix = "somesh/adsofworld"
 
-suffix = pd.read_json("yt_ads_sharingan_nocap_f.jsonl", lines=True)["Video"].tolist()
-suffix = suffix[args.process_idx :: args.num_process]
+_suffix = os.listdir('videos')[args.process_idx :: args.num_process]
 
 if __name__ == "__main__":
-    for _suffix in tqdm(suffix):
-        key = prefix + "/" + _suffix
+    for suffix in tqdm(_suffix):
         try:
-            obj_data = s3.get_object(Bucket=bucket, Key=key)
-            video_id = _suffix.split("/")[1].split(".")[0]
-            if os.path.exists(_suffix):
-                continue
-            s3.download_file(bucket, key, _suffix)
-            video = open_video(_suffix)
+            suffix = "videos/" + suffix
+            video = open_video(suffix)
             scene_manager = SceneManager()
             scene_manager.add_detector(AdaptiveDetector())
             scene_manager.detect_scenes(video)
             scene_list = scene_manager.get_scene_list()
-            video_id = _suffix.split("/")[1].split(".")[0]
+            video_id = suffix.split('_')[0]
             save_images(
                 scene_list=scene_list,
                 video=video,
                 image_name_template=f"{video_id}-$SCENE_NUMBER",
-                output_dir="yt_scenes",
+                output_dir="video_sccenes",
                 num_images=1,
             )
         except Exception as e:
             with open(f"error_csv_{args.process_idx}.text", "a") as f:
-                f.write(key + "\n")
+                f.write(suffix + "\n")
