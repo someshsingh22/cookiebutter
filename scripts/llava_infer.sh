@@ -20,5 +20,6 @@ aws s3 cp s3://crawldatafromgcp/somesh/EmotionNet_dataset.tar.gz ./
 aws s3 cp s3://crawldatafromgcp/somesh/emotion/stock_annots.jsonl ./
 
 tar -xvf EmotionNet_dataset.tar.gz
-
+git clone git@github.com:someshsingh22/cookiebutter.git
+cp cookiebutter/scripts/llava_vllm.py ./
 python llava_vllm.py

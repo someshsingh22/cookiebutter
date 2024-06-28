@@ -31,7 +31,9 @@ def perform_ocr(process_id, img_paths, output_file):
 
 
 def divide_and_process_images(processes=180):
-    img_paths = sorted(["frames_marketing/"+f for f in os.listdir("frames_marketing")])
+    img_paths = sorted(
+        ["frames_marketing/" + f for f in os.listdir("frames_marketing")]
+    )
     chunk_size = len(img_paths) // processes
     chunks = [
         img_paths[i : i + chunk_size] for i in range(0, len(img_paths), chunk_size)

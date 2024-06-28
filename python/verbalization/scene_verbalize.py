@@ -8,13 +8,19 @@ import torch
 
 gpu_id = int(os.getenv("DEVICE", 0))
 device = f"cuda:{gpu_id}"
-model = LlavaNextForConditionalGeneration.from_pretrained("llava-hf/llava-v1.6-vicuna-13b-hf", torch_dtype=torch.float16, low_cpu_mem_usage=True) .to(device)
+model = LlavaNextForConditionalGeneration.from_pretrained(
+    "llava-hf/llava-v1.6-vicuna-13b-hf",
+    torch_dtype=torch.float16,
+    low_cpu_mem_usage=True,
+).to(device)
 processor = LlavaNextProcessor.from_pretrained("llava-hf/llava-v1.6-vicuna-13b-hf")
 num_gpus = torch.cuda.device_count()
 batch_size = 22
-df = pd.read_json('stock_annots.jsonl', lines=True)
-df['path']='EmotionNet_dataset/images-256/' + df['path']
-df['prompt'] = "A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions. USER: <image>\nWhat is shown in this image? ASSISTANT:"
+df = pd.read_json("stock_annots.jsonl", lines=True)
+df["path"] = "EmotionNet_dataset/images-256/" + df["path"]
+df[
+    "prompt"
+] = "A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions. USER: <image>\nWhat is shown in this image? ASSISTANT:"
 
 # query = """For the given image, write a one line caption and maximum 20 descriptive keywords, no more than that.
 # For example:

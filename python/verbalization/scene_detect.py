@@ -54,7 +54,7 @@ def parse_arguments():
 args = parse_arguments()
 
 
-_suffix = os.listdir('videos')[args.process_idx :: args.num_process]
+_suffix = os.listdir("videos")[args.process_idx :: args.num_process]
 
 if __name__ == "__main__":
     for suffix in tqdm(_suffix):
@@ -65,7 +65,7 @@ if __name__ == "__main__":
             scene_manager.add_detector(AdaptiveDetector())
             scene_manager.detect_scenes(video)
             scene_list = scene_manager.get_scene_list()
-            video_id = suffix.split('_')[0]
+            video_id = suffix.split("_")[0]
             save_images(
                 scene_list=scene_list,
                 video=video,
