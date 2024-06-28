@@ -53,6 +53,3 @@ for batch in trange(0, len(df), batch_size):
             "s3://crawldatafromgcp/somesh/emotion/captions/completed_{batch}.jsonl",
         ]
     )
-    os.system(
-        f"aws s3 cp out/completed_{batch}.jsonl s3://crawldatafromgcp/somesh/emotion/captions/completed_{batch}.jsonl"
-    )
