@@ -4,7 +4,7 @@ from tqdm import trange
 from vllm import LLM, SamplingParams
 from vllm.multimodal.image import ImagePixelData
 import warnings
-import os
+import os, glob
 import subprocess
 
 sampling_params = SamplingParams(temperature=0.8, top_p=0.95, max_tokens=128)
@@ -13,9 +13,16 @@ df["path"] = "EmotionNet_dataset/images-256/" + df["path"]
 if not os.path.exists("out"):
     os.makedirs("out")
 
-if os.path.exists("out/completed.jsonl"):
-    completed = pd.read_json("out/completed.jsonl", lines=True)
-    df = df[~df["path"].isin(completed["path"])]
+S3_ROOT = "s3://crawldatafromgcp/somesh/emotion/captions"
+os.system(f"aws s3 sync {S3_ROOT} ./out")
+completed = [pd.read_json(f, lines=True) for f in glob.glob("out/*.jsonl")]
+completed = pd.concat(completed)
+df = df[~df["path"].isin(completed["path"])]
+df = df.reset_index(drop=True)
+df.to_json("out/completed.jsonl", lines=True, orient="records")
+subprocess.Popen(
+    ["aws", "s3", "cp", "out/completed.jsonl", f"{S3_ROOT}/completed.jsonl"]
+)
 
 llm = LLM(
     model="llava-hf/llava-v1.6-mistral-7b-hf",
@@ -29,7 +36,7 @@ llm = LLM(
 )
 warnings.filterwarnings("ignore")
 prompt = f"[INST] \nYou are an image captioner. Your task is to analyze an image and describe the image as a human would interpret them in one sentence only not more than that {'<image>' * 1176} What is shown in this image? [/INST]"
-batch_size = 1000
+batch_size = 5000
 
 for batch in trange(0, len(df), batch_size):
     batch_df = df.iloc[batch : batch + batch_size]
@@ -50,6 +57,6 @@ for batch in trange(0, len(df), batch_size):
             "s3",
             "cp",
             f"out/completed_{batch}.jsonl",
-            "s3://crawldatafromgcp/somesh/emotion/captions/completed_{batch}.jsonl",
+            f"{S3_ROOT}/completed_{batch}.jsonl",
         ]
     )
